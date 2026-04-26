@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLMOps 01 — LLM API Gateways</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-card: #0d1117;
+            --bg-code: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #76B900;
+            --accent-dim: #76B90044;
+            --accent-glow: #76B90033;
+            --border: #21262d;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --max-width: 900px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hero > * { position: relative; z-index: 1; }
+        .series-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+        .hero h1 .accent { color: var(--accent); }
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin-bottom: 2rem;
+        }
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+            white-space: nowrap;
+        }
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            max-width: var(--max-width);
+        }
+        .pipeline-step {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .pipeline-arrow { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
+        .slide {
+            min-height: 100vh;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .slide-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--accent-dim);
+            position: absolute;
+            top: 2rem;
+            right: 1.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+        .slide h2 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+        }
+        .slide h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .slide p { margin-bottom: 1rem; color: var(--text-secondary); }
+        .slide p strong { color: var(--text-primary); }
+        .slide ul, .slide ol { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-secondary); }
+        .slide li { margin-bottom: 0.4rem; }
+        .slide li strong { color: var(--text-primary); }
+        .slide code {
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            padding: 0.05rem 0.35rem;
+            border-radius: 3px;
+            color: #c9d1d9;
+        }
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.25rem 0;
+            overflow: hidden;
+        }
+        .code-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
+        .code-block code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #c9d1d9;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+        .kw { color: #ff7b72; }
+        .fn { color: #d2a8ff; }
+        .str { color: #a5d6ff; }
+        .cm { color: #8b949e; font-style: italic; }
+        .num { color: #79c0ff; }
+        .type { color: #ffa657; }
+        .dir { color: #ff7b72; }
+        .mac { color: #ffa657; }
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-display);
+            white-space: nowrap;
+        }
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        .diagram-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-box {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+        }
+        .diagram-box.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-box.dim { color: var(--text-secondary); border-color: var(--border); }
+        .diagram-arrow { color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+        .diagram-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-vertical .diagram-arrow { font-size: 1.1rem; }
+        .hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .hierarchy-level { display: flex; align-items: center; gap: 0.75rem; }
+        .hierarchy-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-align: right;
+        }
+        .hierarchy-items { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+        .hierarchy-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .hierarchy-item.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .diagram-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .diagram-panel {
+            padding: 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .diagram-panel.accent-border { border-left: 3px solid var(--accent); }
+        .diagram-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+        .diagram-panel p, .diagram-panel ul { font-size: 0.85rem; }
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+        .callout p { margin-bottom: 0; }
+        .callout p + p { margin-top: 0.5rem; }
+        .callout .callout-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+        .contents-list { list-style: none; padding-left: 0; counter-reset: contents; }
+        .contents-list li {
+            counter-increment: contents;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .contents-list li:last-child { border-bottom: none; }
+        .contents-list li::before {
+            content: counter(contents, decimal-leading-zero);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 2rem;
+        }
+        .contents-list a { color: var(--text-primary); text-decoration: none; transition: color 0.2s; }
+        .contents-list a:hover { color: var(--accent); }
+        .footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        .canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.25rem 0;
+            overflow-x: auto;
+        }
+        .canvas-wrap canvas, .canvas-wrap svg { display: block; margin: 0 auto; max-width: 100%; }
+        .badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            margin-left: 0.3rem;
+        }
+        .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .badge.warn  { border-color: #ffa657; color: #ffa657; background: rgba(255,166,87,0.08); }
+        .badge.bad   { border-color: #ff7b72; color: #ff7b72; background: rgba(255,123,114,0.08); }
+        @media (max-width: 640px) {
+            .slide { padding: 3rem 1rem; min-height: auto; }
+            .slide-number { font-size: 3rem; top: 1.5rem; right: 1rem; }
+            .slide h2 { font-size: 1.5rem; }
+            .diagram-grid.cols-2, .diagram-grid.cols-3 { grid-template-columns: 1fr; }
+            .pipeline { gap: 0.15rem; }
+            .pipeline-step { font-size: 0.6rem; padding: 0.2rem 0.4rem; }
+            .hero h1 { font-size: 1.8rem; }
+            table { font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+<header class="hero">
+    <div class="series-label">Production LLMOps Series &mdash; Presentation 01</div>
+    <h1>LLM API <span class="accent">Gateways</span></h1>
+    <p class="subtitle">LiteLLM, Portkey, OpenRouter, custom gateway patterns, multi-provider failover, PII scrubbing, and deployment shapes &mdash; sidecar, central, edge.</p>
+
+    <div class="tags">
+        <span class="tag">LiteLLM</span>
+        <span class="tag">Portkey</span>
+        <span class="tag">OpenRouter</span>
+        <span class="tag">Failover</span>
+        <span class="tag">PII Scrubbing</span>
+        <span class="tag">Sidecar</span>
+        <span class="tag">Rate Limiting</span>
+    </div>
+
+    <div class="pipeline">
+        <span class="pipeline-step">Client</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Gateway</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Route / Auth</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">PII Scrub</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Provider A/B/C</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Observe</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Response</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We&rsquo;ll Cover</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">What a Gateway Does &amp; Why</a></li>
+        <li><a href="#slide-02">LiteLLM &mdash; OpenAI-Compat Shim, Models, Fallback</a></li>
+        <li><a href="#slide-03">Portkey &mdash; Caching, Guardrails, Routing</a></li>
+        <li><a href="#slide-04">OpenRouter &mdash; Pay-as-You-Go Aggregator</a></li>
+        <li><a href="#slide-05">Custom Gateway Patterns</a></li>
+        <li><a href="#slide-06">Multi-Provider Failover Strategies</a></li>
+        <li><a href="#slide-07">PII Scrubbing at the Boundary</a></li>
+        <li><a href="#slide-08">Deployment Shapes &mdash; Sidecar, Central, Edge</a></li>
+        <li><a href="#slide-09">What to Take Away</a></li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>What a Gateway Does &amp; Why</h2>
+    <p>An LLM API gateway sits between your application code and every upstream model provider. It is the single seam where cross-cutting concerns &mdash; authentication, rate-limiting, cost attribution, observability, failover &mdash; can be enforced without touching application code.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Without a gateway</h4>
+            <ul>
+                <li>Each service holds its own API keys</li>
+                <li>Provider URLs hard-coded &mdash; changing vendor = code change</li>
+                <li>No centralised cost tracking or spend caps</li>
+                <li>Retry / fallback logic duplicated in N services</li>
+                <li>No uniform audit log across providers</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>With a gateway</h4>
+            <ul>
+                <li>One API key per team; gateway holds real provider creds</li>
+                <li>Switch provider by editing gateway config, zero downtime</li>
+                <li>Per-customer spend attribution at one chokepoint</li>
+                <li>Retry, backoff, fallover in the gateway, once</li>
+                <li>Uniform OpenTelemetry span per request, every provider</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>The five gateway obligations</h3>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Obligation</th><th>Implementation</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Protocol normalisation</strong></td><td>Map every provider to a single OpenAI-compatible API surface (<code>POST /v1/chat/completions</code>)</td></tr>
+                <tr><td><strong>Credential isolation</strong></td><td>Clients authenticate to the gateway; gateway holds provider keys in a secrets store</td></tr>
+                <tr><td><strong>Traffic policy</strong></td><td>Rate limits (token bucket), per-tenant quotas, spend caps enforced before the upstream call</td></tr>
+                <tr><td><strong>Resilience</strong></td><td>Timeout, retry with exponential backoff, provider failover without client awareness</td></tr>
+                <tr><td><strong>Observability</strong></td><td>Structured log + trace per request: model, token counts, latency, cost estimate, status</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Cost context</div>
+        <p>Without a gateway, a 429 from OpenAI surfaces as a raw HTTP error to your user. With a gateway, that 429 triggers an automatic fallback to Anthropic or a queued retry &mdash; the user sees nothing. That single behaviour justifies most gateway deployments on its own.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>LiteLLM &mdash; OpenAI-Compat Shim, Models, Fallback</h2>
+    <p>LiteLLM (<code>pip install litellm</code>, MIT licence, v1.x as of 2025) translates between 100+ provider APIs and the OpenAI request/response schema. It can run as a Python library, as a proxy server (<code>litellm --port 4000</code>), or embedded in another gateway.</p>
+
+    <div class="code-block">
+        <div class="code-header">litellm proxy — config.yaml</div>
+<pre><code><span class="type">model_list</span>:
+  - <span class="type">model_name</span>: <span class="str">gpt-4o</span>
+    <span class="type">litellm_params</span>:
+      <span class="type">model</span>: <span class="str">openai/gpt-4o</span>
+      <span class="type">api_key</span>: <span class="str">os.environ/OPENAI_API_KEY</span>
+
+  - <span class="type">model_name</span>: <span class="str">gpt-4o</span>           <span class="cm"># same alias — fallback</span>
+    <span class="type">litellm_params</span>:
+      <span class="type">model</span>: <span class="str">anthropic/claude-3-5-sonnet-20241022</span>
+      <span class="type">api_key</span>: <span class="str">os.environ/ANTHROPIC_API_KEY</span>
+
+<span class="type">router_settings</span>:
+  <span class="type">routing_strategy</span>: <span class="str">latency-based-routing</span>
+  <span class="type">num_retries</span>: <span class="num">3</span>
+  <span class="type">timeout</span>: <span class="num">30</span>
+  <span class="type">allowed_fails</span>: <span class="num">2</span>
+  <span class="type">cooldown_time</span>: <span class="num">60</span>        <span class="cm"># seconds before retrying a failed model</span>
+
+<span class="type">general_settings</span>:
+  <span class="type">master_key</span>: <span class="str">sk-my-internal-key</span>
+  <span class="type">database_url</span>: <span class="str">os.environ/DATABASE_URL</span>  <span class="cm"># Postgres for spend tracking</span></code></pre>
+    </div>
+
+    <div class="diagram-grid cols-3">
+        <div class="diagram-panel accent-border">
+            <h4>Routing strategies</h4>
+            <ul>
+                <li><code>simple-shuffle</code> &mdash; random across healthy deployments</li>
+                <li><code>least-busy</code> &mdash; fewest in-flight requests</li>
+                <li><code>latency-based-routing</code> &mdash; EWMA of p50 latency</li>
+                <li><code>cost-based-routing</code> &mdash; cheapest per token</li>
+                <li><code>usage-based-routing</code> &mdash; TPM / RPM headroom</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Virtual keys &amp; spend</h4>
+            <p>Issue per-team virtual keys (<code>sk-…</code>). Each key carries a <code>max_budget</code> and <code>budget_duration</code>. The Postgres spend table is updated after every response. Budget exhaustion returns HTTP 429.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Callbacks</h4>
+            <p>Pluggable callbacks on success/failure: <code>langfuse</code>, <code>helicone</code>, <code>s3</code>, <code>datadog</code>, <code>prometheus</code>. Set once in config, fires for every request regardless of provider.</p>
+        </div>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Streaming note</div>
+        <p>LiteLLM normalises SSE streaming: every provider&rsquo;s chunk format is converted to OpenAI <code>data: {&quot;choices&quot;:[{&quot;delta&quot;:{&quot;content&quot;:&quot;…&quot;}}]}</code>. The last chunk always carries <code>usage</code> so token counts are available even in streaming mode.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>Portkey &mdash; Caching, Guardrails, Routing</h2>
+    <p>Portkey (<code>portkey-ai</code> SDK, hosted at <code>api.portkey.ai</code> or self-hosted via Docker) adds a managed control-plane layer. It extends the OpenAI SDK by replacing the <code>base_url</code> and injecting a per-request <strong>Config</strong> object via the <code>x-portkey-config</code> header.</p>
+
+    <div class="code-block">
+        <div class="code-header">Python &mdash; Portkey client initialisation (SDK v1.x)</div>
+<pre><code><span class="kw">from</span> portkey_ai <span class="kw">import</span> <span class="type">Portkey</span>
+
+client = <span class="type">Portkey</span>(
+    api_key=<span class="str">"pk-my-key"</span>,
+    virtual_key=<span class="str">"openai-vk-xxxxx"</span>,
+    config={
+        <span class="str">"cache"</span>: {<span class="str">"mode"</span>: <span class="str">"semantic"</span>, <span class="str">"max_age"</span>: <span class="num">3600</span>},
+        <span class="str">"retry"</span>: {<span class="str">"attempts"</span>: <span class="num">3</span>, <span class="str">"on_status_codes"</span>: [<span class="num">429</span>, <span class="num">500</span>, <span class="num">503</span>]},
+        <span class="str">"strategy"</span>: {
+            <span class="str">"mode"</span>: <span class="str">"fallback"</span>,
+            <span class="str">"on_status_codes"</span>: [<span class="num">429</span>, <span class="num">500</span>]
+        },
+        <span class="str">"targets"</span>: [
+            {<span class="str">"virtual_key"</span>: <span class="str">"openai-vk-xxxxx"</span>, <span class="str">"weight"</span>: <span class="num">0.7</span>},
+            {<span class="str">"virtual_key"</span>: <span class="str">"anthropic-vk-yyy"</span>, <span class="str">"weight"</span>: <span class="num">0.3</span>}
+        ]
+    }
+)
+
+response = client.chat.completions.create(
+    model=<span class="str">"gpt-4o"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Summarise the Kyoto Protocol."</span>}]
+)</code></pre>
+    </div>
+
+    <h3>Key Portkey capabilities</h3>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Semantic cache</h4>
+            <p>Embeds the prompt; cosine-similarity threshold (default 0.97) determines a hit. Cache entries stored in Portkey&rsquo;s Redis-backed store (or self-hosted Redis via <code>PORTKEY_REDIS_URL</code>). TTL configurable per-request via <code>x-portkey-cache-max-age</code>.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Guardrails</h4>
+            <p>Before/after hooks: <code>prompt_injection_detection</code>, <code>pii_redaction</code> (regex + model-based), <code>content_moderation</code> (OpenAI mod API or custom). Hook result is <code>allow</code>, <code>block</code>, or <code>transform</code>. Each hook emits a scored annotation in the trace.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Load balancing modes</h4>
+            <p><code>loadbalance</code> (weighted round-robin), <code>fallback</code> (primary &rarr; secondary on error), <code>conditional</code> (route on metadata field, e.g. <code>user_tier == "enterprise"</code>).</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Observability</h4>
+            <p>Every request logs to Portkey Logs (hosted) or any OTel-compatible collector. Spans carry <code>portkey.prompt_tokens</code>, <code>portkey.completion_tokens</code>, <code>portkey.cost</code>, and <code>portkey.cache_status</code> attributes.</p>
+        </div>
+    </div>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>OpenRouter &mdash; Pay-as-You-Go Aggregator</h2>
+    <p>OpenRouter (<code>openrouter.ai</code>) exposes 200+ models from 40+ providers behind a single OpenAI-compatible endpoint at <code>https://openrouter.ai/api/v1</code>. You pay in OpenRouter credits; OpenRouter handles per-provider billing, rate limits, and failover.</p>
+
+    <div class="code-block">
+        <div class="code-header">curl &mdash; routing via OpenRouter model string</div>
+<pre><code><span class="fn">curl</span> https://openrouter.ai/api/v1/chat/completions \
+  -H <span class="str">"Authorization: Bearer $OPENROUTER_API_KEY"</span> \
+  -H <span class="str">"HTTP-Referer: https://myapp.example.com"</span>  <span class="cm"># required for attribution</span> \
+  -H <span class="str">"X-Title: My App"</span> \
+  -d <span class="str">'{
+    "model": "anthropic/claude-3-5-sonnet",
+    "messages": [{"role":"user","content":"Hello"}],
+    "route": "fallback",
+    "models": [
+      "anthropic/claude-3-5-sonnet",
+      "openai/gpt-4o",
+      "google/gemini-1.5-pro"
+    ]
+  }'</span></code></pre>
+    </div>
+
+    <h3>Provider routing semantics</h3>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Route value</th><th>Behaviour</th><th>Use case</th></tr></thead>
+            <tbody>
+                <tr><td><code>fallback</code></td><td>Try models in order; next on 4xx/5xx</td><td>Maximum uptime</td></tr>
+                <tr><td><code>load_balance</code></td><td>Distribute by cost &times; latency score</td><td>Cost/latency trade-off</td></tr>
+                <tr><td><em>(omitted)</em></td><td>Single model, OpenRouter picks cheapest provider</td><td>Simple lowest-cost</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Response headers for observability</h3>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Header</th><th>Content</th></tr></thead>
+            <tbody>
+                <tr><td><code>X-OR-Model</code></td><td>Actual model used (may differ from requested due to fallback)</td></tr>
+                <tr><td><code>X-OR-Provider</code></td><td>Provider that served the request</td></tr>
+                <tr><td><code>openrouter-generation-id</code></td><td>UUID; fetch full usage &amp; cost from <code>GET /api/v1/generation?id=…</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Vendor lock-in trade-off</div>
+        <p>OpenRouter reduces provider lock-in at the cost of introducing OpenRouter as a dependency. For production workloads consider whether a self-hosted LiteLLM proxy gives you equivalent routing with fewer third-party dependencies. OpenRouter is excellent for prototyping and teams that don&rsquo;t want to manage provider relationships.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>Custom Gateway Patterns</h2>
+    <p>When LiteLLM, Portkey, and OpenRouter don&rsquo;t cover your requirements &mdash; bespoke auth, organisation-specific PII rules, proprietary models, complex routing logic &mdash; you build a thin gateway layer on top of a reverse proxy or as a standalone service.</p>
+
+    <h3>Common patterns</h3>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Reverse-proxy overlay (Nginx / Envoy / Traefik)</h4>
+            <p>An Nginx <code>lua_block</code> or Envoy <code>ext_proc</code> filter intercepts the request at the proxy layer: validates the JWT, enriches the request with <code>X-LLM-Budget-Remaining</code> and <code>X-LLM-Tenant</code> headers, then forwards to the upstream API. No separate process; works at wire speed for auth checks.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>FastAPI middleware gateway</h4>
+            <p>A FastAPI app with <code>@app.middleware("http")</code> that holds provider creds in Vault. Implements <code>POST /v1/chat/completions</code>, rewriting the <code>model</code> field and injecting system-prompt metadata. Small enough to own fully; easy to extend. Latency overhead &asymp; 2&ndash;5 ms.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Request / response hooks pattern</h4>
+            <p>Define a hook chain: <code>pre_request[]</code> &rarr; upstream &rarr; <code>post_response[]</code>. Each hook is an async coroutine. Hooks can mutate the request/response or abort with a status code. Inspired by LangChain callbacks but at the HTTP layer.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Model-alias registry</h4>
+            <p>Maintain a YAML or Postgres-backed registry mapping logical names (<code>summariser-v2</code>) to versioned model IDs and provider endpoints. The gateway resolves aliases at request time. Roll back a model by updating one registry row, with zero application changes.</p>
+        </div>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">FastAPI custom gateway — minimal skeleton</div>
+<pre><code><span class="kw">from</span> fastapi <span class="kw">import</span> <span class="type">FastAPI</span>, <span class="type">Request</span>, <span class="type">HTTPException</span>
+<span class="kw">import</span> httpx, os
+
+app = <span class="type">FastAPI</span>()
+REGISTRY = {<span class="str">"summariser-v2"</span>: (<span class="str">"openai/gpt-4o"</span>, <span class="str">"https://api.openai.com/v1"</span>)}
+
+<span class="mac">@app.post</span>(<span class="str">"/v1/chat/completions"</span>)
+<span class="kw">async def</span> <span class="fn">chat</span>(req: <span class="type">Request</span>):
+    body = <span class="kw">await</span> req.<span class="fn">json</span>()
+    alias = body.get(<span class="str">"model"</span>, <span class="str">"summariser-v2"</span>)
+    model_id, base_url = REGISTRY.get(alias, (alias, <span class="str">"https://api.openai.com/v1"</span>))
+    body[<span class="str">"model"</span>] = model_id
+    <span class="kw">async with</span> httpx.<span class="type">AsyncClient</span>(base_url=base_url) <span class="kw">as</span> c:
+        r = <span class="kw">await</span> c.<span class="fn">post</span>(<span class="str">"/chat/completions"</span>, json=body,
+                         headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {os.environ['PROVIDER_KEY']}"</span>},
+                         timeout=<span class="num">60</span>)
+    <span class="kw">return</span> r.<span class="fn">json</span>()</code></pre>
+    </div>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Multi-Provider Failover Strategies</h2>
+    <p>A failover strategy is more than &ldquo;try B if A fails&rdquo;. Production LLM traffic has four distinct failure modes, each needing a different response.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Failure mode</th><th>HTTP status</th><th>Strategy</th></tr></thead>
+            <tbody>
+                <tr><td>Rate limit exhausted</td><td>429</td><td>Wait for <code>Retry-After</code> header (seconds), or immediately route to secondary &mdash; 429 means &ldquo;not now&rdquo;, not &ldquo;broken&rdquo;</td></tr>
+                <tr><td>Provider outage</td><td>500, 502, 503</td><td>Failover to secondary; mark primary as <em>unhealthy</em> for a cooldown window (60&ndash;300 s)</td></tr>
+                <tr><td>Context-window overflow</td><td>400 (<code>context_length_exceeded</code>)</td><td>Fallback to a model with larger context, not a random secondary</td></tr>
+                <tr><td>Slow response / timeout</td><td>(no response)</td><td>Client-side deadline; hedge request to secondary after <em>p95 latency + 20%</em> with cancellation on first response</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Hedged requests</h3>
+    <p>A <strong>hedged request</strong> fires a second request to a different provider after a deadline, cancels the slower one on first response. Effective against tail latency without the cost of always calling two providers. LiteLLM supports this via <code>routing_strategy: latency-based-routing</code> with <code>num_retries</code>; implement manually with <code>asyncio.wait(..., return_when=FIRST_COMPLETED)</code>.</p>
+
+    <div class="canvas-wrap">
+        <svg viewBox="0 0 720 200" width="720" height="200" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .gbl { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .gba { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; }
+                .gb  { fill: #161b22; stroke: #30363d; rx: 4; }
+                .arr { stroke: #76B900; stroke-width: 1.5; fill: none; marker-end: url(#ga); }
+                .hed { stroke: #ffa657; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; marker-end: url(#go); }
+                .can { stroke: #ff7b72; stroke-width: 1; fill: none; stroke-dasharray: 2 2; }
+                .tl  { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+            </style>
+            <defs>
+                <marker id="ga" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                </marker>
+                <marker id="go" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffa657"/>
+                </marker>
+            </defs>
+            <text x="10"  y="20" class="gba">Hedged request timeline</text>
+            <rect x="30"  y="40" width="90" height="30" rx="4" class="gb"/>
+            <text x="40"  y="59" class="gbl">Client req</text>
+
+            <rect x="220" y="35" width="110" height="30" rx="4" fill="#0d1117" stroke="#76B900"/>
+            <text x="232" y="54" class="tl" fill="#76B900">Provider A (primary)</text>
+            <rect x="220" y="80" width="110" height="30" rx="4" fill="#0d1117" stroke="#ffa657"/>
+            <text x="227" y="99" class="tl" fill="#ffa657">Provider B (hedge)</text>
+
+            <rect x="500" y="35" width="100" height="30" rx="4" fill="#161b22" stroke="#76B900"/>
+            <text x="515" y="54" class="tl" fill="#76B900">A responds (slow)</text>
+            <rect x="420" y="80" width="100" height="30" rx="4" fill="#161b22" stroke="#76B900"/>
+            <text x="430" y="99" class="tl" fill="#76B900">B responds (fast)</text>
+
+            <path d="M 120 55 L 218 55" class="arr"/>
+            <path d="M 165 55 L 165 95 L 218 95" class="hed"/>
+            <text x="155" y="75" class="gbl" fill="#ffa657">+p95</text>
+            <path d="M 330 95 L 498 95" class="arr"/>
+            <text x="346" y="110" class="gbl">First response wins</text>
+            <line x1="600" y1="50" x2="600" y2="175" class="can"/>
+            <text x="605" y="165" class="gbl" fill="#ff7b72">A cancelled</text>
+        </svg>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Circuit breaker &mdash; don&rsquo;t skip it</div>
+        <p>Track provider error rates in a sliding window (e.g. 10 requests, 5-second bucket). Open the circuit when error rate &gt; 50%; half-open after cooldown; close on success. LiteLLM&rsquo;s <code>allowed_fails</code> + <code>cooldown_time</code> implements this. Without a circuit breaker, a flapping provider generates cascading retries that amplify your own latency.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>PII Scrubbing at the Boundary</h2>
+    <p>The gateway is the last point before data leaves your network. Scrubbing PII here means no client change is required and the redaction applies uniformly across every model and every team.</p>
+
+    <h3>Detection approaches</h3>
+    <div class="diagram-grid cols-3">
+        <div class="diagram-panel accent-border">
+            <h4>Regex patterns</h4>
+            <p>Fast, low-latency (&lt; 1 ms). Covers well-structured PII: UK NI numbers (<code>[A-Z]{2}[0-9]{6}[A-D]</code>), NHS numbers, credit card PANs (Luhn check), email, IPv4/IPv6, UK postcodes. False-negative rate high for free-text names.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>NER models (spaCy / Presidio)</h4>
+            <p>Microsoft Presidio v2 runs a spaCy <code>en_core_web_lg</code> NER pass. Detects PERSON, ORG, LOC, DATE, PHONE, CREDIT_CARD. ~5&ndash;20 ms per request at CPU. <code>pip install presidio-analyzer presidio-anonymizer</code>. Redact with placeholder tokens (<code>&lt;PERSON_1&gt;</code>) for reversibility.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>LLM-based detection</h4>
+            <p>Small classifier model (e.g. BERT fine-tuned on PII) or a fast frontier model used as a pre-filter. Highest recall; adds 50&ndash;200 ms. Use only for async pipelines or when compliance demands high recall. Not suitable for &lt;100 ms latency SLOs.</p>
+        </div>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">Presidio redaction in a gateway hook (Python)</div>
+<pre><code><span class="kw">from</span> presidio_analyzer <span class="kw">import</span> <span class="type">AnalyzerEngine</span>
+<span class="kw">from</span> presidio_anonymizer <span class="kw">import</span> <span class="type">AnonymizerEngine</span>
+
+analyzer  = <span class="type">AnalyzerEngine</span>()
+anonymizer = <span class="type">AnonymizerEngine</span>()
+
+<span class="kw">def</span> <span class="fn">scrub_messages</span>(messages: list[dict]) -> list[dict]:
+    <span class="kw">for</span> msg <span class="kw">in</span> messages:
+        text = msg.get(<span class="str">"content"</span>, <span class="str">""</span>)
+        results = analyzer.<span class="fn">analyze</span>(
+            text=text, language=<span class="str">"en"</span>,
+            entities=[<span class="str">"PERSON"</span>, <span class="str">"EMAIL_ADDRESS"</span>, <span class="str">"CREDIT_CARD"</span>,
+                       <span class="str">"UK_NHS"</span>, <span class="str">"PHONE_NUMBER"</span>, <span class="str">"IBAN_CODE"</span>]
+        )
+        msg[<span class="str">"content"</span>] = anonymizer.<span class="fn">anonymize</span>(text, results).text
+    <span class="kw">return</span> messages</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Reversibility and audit</div>
+        <p>Replace PII with deterministic placeholder tokens rather than random UUIDs so you can correlate gateway logs back to source records if needed. Store the mapping in an encrypted side-channel keyed on request ID. Never log the original PII &mdash; only log the placeholder and the entity type (<code>PERSON_1</code>, <code>EMAIL_1</code>). UK GDPR Article 25 requires &ldquo;data protection by design&rdquo;; scrubbing at the gateway satisfies that obligation without re-architecting every consuming service.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>Deployment Shapes &mdash; Sidecar, Central, Edge</h2>
+    <p>The same gateway logic can be deployed in three topological shapes, each with distinct latency, blast-radius, and operational complexity characteristics.</p>
+
+    <div class="canvas-wrap">
+        <svg viewBox="0 0 720 260" width="720" height="260" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .ds-box { fill: #161b22; stroke: #30363d; }
+                .ds-acc { fill: rgba(118,185,0,0.06); stroke: #76B900; }
+                .ds-lbl { fill: #e6edf3; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; }
+                .ds-sub { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+                .ds-arr { stroke: #76B900; stroke-width: 1.5; fill: none; marker-end: url(#da); }
+            </style>
+            <defs>
+                <marker id="da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                </marker>
+            </defs>
+
+            <text x="10"  y="18" class="ds-lbl">Sidecar</text>
+            <rect x="10"  y="30" width="80"  height="40" rx="4" class="ds-box"/><text x="20" y="54" class="ds-sub">App Pod</text>
+            <rect x="100" y="30" width="80"  height="40" rx="4" class="ds-acc"/><text x="108" y="54" class="ds-sub">GW sidecar</text>
+            <path d="M 90 50 L 98 50" class="ds-arr"/>
+            <path d="M 180 50 L 230 50" class="ds-arr"/>
+            <rect x="230" y="30" width="80"  height="40" rx="4" class="ds-box"/><text x="236" y="54" class="ds-sub">Provider API</text>
+            <text x="10" y="90" class="ds-sub" fill="#8b949e">Per-pod; blast radius = 1 pod. No extra hop. Config push via ConfigMap.</text>
+
+            <text x="10" y="130" class="ds-lbl">Central (shared)</text>
+            <rect x="10"  y="140" width="80"  height="40" rx="4" class="ds-box"/><text x="20" y="164" class="ds-sub">Service A</text>
+            <rect x="10"  y="190" width="80"  height="40" rx="4" class="ds-box"/><text x="20" y="214" class="ds-sub">Service B</text>
+            <rect x="160" y="155" width="90"  height="40" rx="4" class="ds-acc"/><text x="168" y="179" class="ds-sub">Gateway (HA)</text>
+            <path d="M 90 160 L 158 170" class="ds-arr"/>
+            <path d="M 90 210 L 158 185" class="ds-arr"/>
+            <path d="M 250 175 L 310 175" class="ds-arr"/>
+            <rect x="310" y="155" width="80"  height="40" rx="4" class="ds-box"/><text x="316" y="179" class="ds-sub">Providers</text>
+            <text x="10" y="245" class="ds-sub">Single config plane. SPOF if not HA. +1&ndash;3 ms intra-cluster hop.</text>
+
+            <text x="430" y="18" class="ds-lbl">Edge (CDN PoP)</text>
+            <rect x="430" y="30" width="80"  height="40" rx="4" class="ds-box"/><text x="440" y="54" class="ds-sub">Browser / mobile</text>
+            <rect x="540" y="30" width="90"  height="40" rx="4" class="ds-acc"/><text x="546" y="54" class="ds-sub">Edge worker</text>
+            <path d="M 510 50 L 538 50" class="ds-arr"/>
+            <path d="M 630 50 L 680 50" class="ds-arr"/>
+            <rect x="680" y="30" width="30"  height="40" rx="4" class="ds-box"/><text x="684" y="54" class="ds-sub">API</text>
+            <text x="430" y="90" class="ds-sub">Cloudflare Workers / Fastly Compute@Edge.</text>
+            <text x="430" y="105" class="ds-sub">Auth + rate-limit close to user; ~5 ms. No egress to origin unless cache miss.</text>
+        </svg>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Shape</th><th>Extra latency</th><th>Blast radius</th><th>Config update</th><th>Best for</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Sidecar</strong></td><td>~0 ms (loopback)</td><td>1 pod</td><td>ConfigMap rollout</td><td>Diverse service mesh; per-service policy</td></tr>
+                <tr><td><strong>Central</strong></td><td>1&ndash;3 ms</td><td>All services</td><td>Immediate, no deploy</td><td>Monorepo teams; centralised audit log</td></tr>
+                <tr><td><strong>Edge</strong></td><td>~5 ms to PoP</td><td>PoP region</td><td>Wrangler deploy (&lt;30 s)</td><td>Client-facing products; global low-latency</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>What to Take Away</h2>
+    <ul>
+        <li><strong>A gateway is mandatory at scale.</strong> Without one you have M&times;N credential, retry, and observability problems. With one you have M+N.</li>
+        <li><strong>LiteLLM proxy</strong> is the lowest-friction self-hosted option: <code>pip install litellm</code>, one YAML, 100+ providers. Use <code>latency-based-routing</code> or <code>cost-based-routing</code> as your default strategy.</li>
+        <li><strong>Portkey</strong> layers on guardrails, semantic cache, and conditional routing with a hosted control plane &mdash; useful when you want that without building it yourself.</li>
+        <li><strong>OpenRouter</strong> externalises multi-provider billing and failover entirely; pay the convenience premium or self-host for cost control.</li>
+        <li><strong>Failover needs four separate paths</strong>: rate-limit (pause/reroute), outage (circuit-break), context overflow (capability fallback), timeout (hedge).</li>
+        <li><strong>Scrub PII at the gateway</strong> with Presidio + regex; &lt;20 ms overhead for CPU-only; satisfies GDPR Article 25 without touching application code.</li>
+        <li><strong>Pick your shape</strong>: sidecar for blast-radius isolation, central for audit simplicity, edge for client-facing global products.</li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Where to next</div>
+        <p>Deck 02 covers what observability inside the gateway looks like: trace structure, OpenTelemetry GenAI semantic conventions, and the four main platforms (Langfuse, Arize Phoenix, Helicone, LangSmith).</p>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_LLMOps">Production LLMOps Series</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;"><a href="https://github.com/BrendanJamesLynskey/LLM_Hub_LLMOps">Back to Series Index</a></p>
+</footer>
+<script>
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+</script>
+</body>
+</html>
