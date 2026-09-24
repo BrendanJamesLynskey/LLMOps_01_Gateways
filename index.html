@@ -9,15 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-card: #0d1117;
-            --bg-code: #161b22;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --accent: #76B900;
-            --accent-dim: #76B90044;
-            --accent-glow: #76B90033;
-            --border: #21262d;
+            --bg-primary: #1c1815;
+            --bg-card: #231e1a;
+            --bg-code: #2b2520;
+            --text-primary: #efe8dc;
+            --text-secondary: #a2978b;
+            --accent: #aabd59;
+            --accent-dim: #aabd5944;
+            --accent-glow: #aabd5933;
+            --border: #3a322b;
             --font-display: 'Space Grotesk', sans-serif;
             --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
             --font-body: 'Inter', sans-serif;
@@ -165,7 +165,7 @@
             border: 1px solid var(--border);
             padding: 0.05rem 0.35rem;
             border-radius: 3px;
-            color: #c9d1d9;
+            color: #dad1c5;
         }
         .code-block {
             background: var(--bg-code);
@@ -178,7 +178,7 @@
             font-family: var(--font-mono);
             font-size: 0.75rem;
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(170,189,89,0.08);
             padding: 0.4rem 1rem;
             border-bottom: 1px solid var(--border);
         }
@@ -187,19 +187,19 @@
             font-family: var(--font-mono);
             font-size: 0.85rem;
             line-height: 1.6;
-            color: #c9d1d9;
+            color: #dad1c5;
             background: transparent;
             border: none;
             padding: 0;
         }
-        .kw { color: #ff7b72; }
-        .fn { color: #d2a8ff; }
-        .str { color: #a5d6ff; }
-        .cm { color: #8b949e; font-style: italic; }
-        .num { color: #79c0ff; }
-        .type { color: #ffa657; }
-        .dir { color: #ff7b72; }
-        .mac { color: #ffa657; }
+        .kw { color: #de805a; }
+        .fn { color: #d7bbdf; }
+        .str { color: #bcdbd4; }
+        .cm { color: #a2978b; font-style: italic; }
+        .num { color: #97cdc6; }
+        .type { color: #e3b174; }
+        .dir { color: #de805a; }
+        .mac { color: #e3b174; }
         .table-wrap {
             overflow-x: auto;
             margin: 1.25rem 0;
@@ -223,7 +223,7 @@
             color: var(--text-secondary);
         }
         tr:last-child td { border-bottom: none; }
-        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        tr:nth-child(even) td { background: rgba(35,30,26,0.5); }
         .diagram-flow {
             display: flex;
             flex-wrap: wrap;
@@ -247,7 +247,7 @@
             text-align: center;
             white-space: nowrap;
         }
-        .diagram-box.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-box.accent { border-color: var(--accent); color: var(--accent); background: rgba(170,189,89,0.08); }
         .diagram-box.dim { color: var(--text-secondary); border-color: var(--border); }
         .diagram-arrow { color: var(--accent); font-size: 1.3rem; font-weight: 700; }
         .diagram-vertical {
@@ -290,7 +290,7 @@
             border: 1px solid var(--border);
             color: var(--text-secondary);
         }
-        .hierarchy-item.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .hierarchy-item.accent { border-color: var(--accent); color: var(--accent); background: rgba(170,189,89,0.08); }
         .diagram-grid {
             display: grid;
             gap: 0.75rem;
@@ -384,8 +384,8 @@
             margin-left: 0.3rem;
         }
         .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-        .badge.warn  { border-color: #ffa657; color: #ffa657; background: rgba(255,166,87,0.08); }
-        .badge.bad   { border-color: #ff7b72; color: #ff7b72; background: rgba(255,123,114,0.08); }
+        .badge.warn  { border-color: #e3b174; color: #e3b174; background: rgba(227,177,116,0.08); }
+        .badge.bad   { border-color: #de805a; color: #de805a; background: rgba(222,128,90,0.08); }
         @media (max-width: 640px) {
             .slide { padding: 3rem 1rem; min-height: auto; }
             .slide-number { font-size: 3rem; top: 1.5rem; right: 1rem; }
@@ -728,43 +728,43 @@ REGISTRY = {<span class="str">"summariser-v2"</span>: (<span class="str">"openai
     <div class="canvas-wrap">
         <svg viewBox="0 0 720 200" width="720" height="200" xmlns="http://www.w3.org/2000/svg">
             <style>
-                .gbl { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-                .gba { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; }
-                .gb  { fill: #161b22; stroke: #30363d; rx: 4; }
-                .arr { stroke: #76B900; stroke-width: 1.5; fill: none; marker-end: url(#ga); }
-                .hed { stroke: #ffa657; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; marker-end: url(#go); }
-                .can { stroke: #ff7b72; stroke-width: 1; fill: none; stroke-dasharray: 2 2; }
-                .tl  { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+                .gbl { fill: #a2978b; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .gba { fill: #aabd59; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; }
+                .gb  { fill: #2b2520; stroke: #463e36; rx: 4; }
+                .arr { stroke: #aabd59; stroke-width: 1.5; fill: none; marker-end: url(#ga); }
+                .hed { stroke: #e3b174; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; marker-end: url(#go); }
+                .can { stroke: #de805a; stroke-width: 1; fill: none; stroke-dasharray: 2 2; }
+                .tl  { fill: #efe8dc; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
             </style>
             <defs>
                 <marker id="ga" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#aabd59"/>
                 </marker>
                 <marker id="go" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffa657"/>
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#e3b174"/>
                 </marker>
             </defs>
             <text x="10"  y="20" class="gba">Hedged request timeline</text>
             <rect x="30"  y="40" width="90" height="30" rx="4" class="gb"/>
             <text x="40"  y="59" class="gbl">Client req</text>
 
-            <rect x="220" y="35" width="110" height="30" rx="4" fill="#0d1117" stroke="#76B900"/>
-            <text x="232" y="54" class="tl" fill="#76B900">Provider A (primary)</text>
-            <rect x="220" y="80" width="110" height="30" rx="4" fill="#0d1117" stroke="#ffa657"/>
-            <text x="227" y="99" class="tl" fill="#ffa657">Provider B (hedge)</text>
+            <rect x="220" y="35" width="110" height="30" rx="4" fill="#231e1a" stroke="#aabd59"/>
+            <text x="232" y="54" class="tl" fill="#aabd59">Provider A (primary)</text>
+            <rect x="220" y="80" width="110" height="30" rx="4" fill="#231e1a" stroke="#e3b174"/>
+            <text x="227" y="99" class="tl" fill="#e3b174">Provider B (hedge)</text>
 
-            <rect x="500" y="35" width="100" height="30" rx="4" fill="#161b22" stroke="#76B900"/>
-            <text x="515" y="54" class="tl" fill="#76B900">A responds (slow)</text>
-            <rect x="420" y="80" width="100" height="30" rx="4" fill="#161b22" stroke="#76B900"/>
-            <text x="430" y="99" class="tl" fill="#76B900">B responds (fast)</text>
+            <rect x="500" y="35" width="100" height="30" rx="4" fill="#2b2520" stroke="#aabd59"/>
+            <text x="515" y="54" class="tl" fill="#aabd59">A responds (slow)</text>
+            <rect x="420" y="80" width="100" height="30" rx="4" fill="#2b2520" stroke="#aabd59"/>
+            <text x="430" y="99" class="tl" fill="#aabd59">B responds (fast)</text>
 
             <path d="M 120 55 L 218 55" class="arr"/>
             <path d="M 165 55 L 165 95 L 218 95" class="hed"/>
-            <text x="155" y="75" class="gbl" fill="#ffa657">+p95</text>
+            <text x="155" y="75" class="gbl" fill="#e3b174">+p95</text>
             <path d="M 330 95 L 498 95" class="arr"/>
             <text x="346" y="110" class="gbl">First response wins</text>
             <line x1="600" y1="50" x2="600" y2="175" class="can"/>
-            <text x="605" y="165" class="gbl" fill="#ff7b72">A cancelled</text>
+            <text x="605" y="165" class="gbl" fill="#de805a">A cancelled</text>
         </svg>
     </div>
 
@@ -829,15 +829,15 @@ anonymizer = <span class="type">AnonymizerEngine</span>()
     <div class="canvas-wrap">
         <svg viewBox="0 0 720 260" width="720" height="260" xmlns="http://www.w3.org/2000/svg">
             <style>
-                .ds-box { fill: #161b22; stroke: #30363d; }
-                .ds-acc { fill: rgba(118,185,0,0.06); stroke: #76B900; }
-                .ds-lbl { fill: #e6edf3; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; }
-                .ds-sub { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-                .ds-arr { stroke: #76B900; stroke-width: 1.5; fill: none; marker-end: url(#da); }
+                .ds-box { fill: #2b2520; stroke: #463e36; }
+                .ds-acc { fill: rgba(170,189,89,0.06); stroke: #aabd59; }
+                .ds-lbl { fill: #efe8dc; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 12px; }
+                .ds-sub { fill: #a2978b; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+                .ds-arr { stroke: #aabd59; stroke-width: 1.5; fill: none; marker-end: url(#da); }
             </style>
             <defs>
                 <marker id="da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#aabd59"/>
                 </marker>
             </defs>
 
@@ -847,7 +847,7 @@ anonymizer = <span class="type">AnonymizerEngine</span>()
             <path d="M 90 50 L 98 50" class="ds-arr"/>
             <path d="M 180 50 L 230 50" class="ds-arr"/>
             <rect x="230" y="30" width="80"  height="40" rx="4" class="ds-box"/><text x="236" y="54" class="ds-sub">Provider API</text>
-            <text x="10" y="90" class="ds-sub" fill="#8b949e">Per-pod; blast radius = 1 pod. No extra hop. Config push via ConfigMap.</text>
+            <text x="10" y="90" class="ds-sub" fill="#a2978b">Per-pod; blast radius = 1 pod. No extra hop. Config push via ConfigMap.</text>
 
             <text x="10" y="130" class="ds-lbl">Central (shared)</text>
             <rect x="10"  y="140" width="80"  height="40" rx="4" class="ds-box"/><text x="20" y="164" class="ds-sub">Service A</text>
